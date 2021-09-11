@@ -1,0 +1,855 @@
+---
+title: "Assessment 3 Business Report"
+author: "Hsin-Chieh Tang s4647300"
+date: "02/09/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+![Source from Outside Magazine 2019](images/image_03.jpg)
+
+```{r, include = FALSE}
+
+#Packages
+
+#install.packages("tidyverse")
+#install.packages("knitr")
+#install.packages("tidymodels")
+#install.packages("ranger")
+#install.packages("ggExtra")
+#install.packages("patchwork")
+#install.packages("GGally")
+
+library(tidyverse)
+library(knitr)
+library(tidymodels)
+library(ranger)
+library(ggExtra)
+library(patchwork)
+library(skimr)
+library(ggridges)
+library(GGally)
+
+```
+
+### Load the dataset
+
+The dataset is regarding annual CO2 emissions per person for 130 countries throughout the world, and it was published by the Food and Agriculture Organization of the United Nations (FAO).
+
+```{r}
+
+food_consumption <- read.csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/master/data/2020/2020-02-18/food_consumption.csv')
+
+# To see the overview of the dataset
+skim(food_consumption)
+
+```
+
+
+# DATA CLEANSING
+
+### 1. spelling correction
+
+We found there is a mistake in spelling in variable name, so we want to change emmission to emission. 
+
+```{r}
+
+food_consumption <- food_consumption %>%
+  setNames(c('country','food_category','consumption','co2_emission'))
+
+```
+
+### 2. It is vital to transform the "character" variables into a "factor" for better analysis.
+  
+```{r}
+
+food_consumption <- food_consumption %>%
+  mutate_if(is.character, factor)
+
+```
+
+
+# DESICION MAKING PROCESS 
+
+From the dataset and data dictionary, we know:
+
+ - There are 130 countries in total.
+ - There are 11 types in food category, which include 7 animal types and 4 non-animal types.
+ - The amount of food that a country provides for consumption. (Kg/person/year)
+ - Based on the food consumption above, the values represent how many CO2 (kg) is generated per person per year.
+
+The main issue is how we can reduce co2 emissions regarding food for the future purpose from this dataset. In order to solve this problem, we make two assumptions: 
+
+**Assumption 1: Can we predict the food category by knowing their food consumption and co2 emissions?**
+
+**Assumption 2: Can we predict the co2 emissions by knowing food category and consumption?**
+
+In the two assumptions, output variables are what we want to predict, so *food category* (character value) and *co2 emissions* (numeric value) are our output variables. We want to predict the output variables by using either **classification** (character value) or **regression** (numeric value) approaches to build models, which can help us to predict new dataset based on the original dataset.
+
+To make sure we can actual predict by using the model for future dataset, we need to do some test to see if our assumptions can get positive results. 
+
+We make some questions to test our assumptions. Before doing that, let's add some variables into dataset and rename to `food_co2`. 
+
+### 1. Add a new variables as main category, which are either animal or non animal.
+
+There are 11 types in food category. For better analysis, we make them into a more general category.
+
+ - animal: pork, poultry, beef,lamb_goat, fish, eggs, milk & cheese; 
+
+ - non_animal: wheat, rice, soybeans, nuts.
+
+```{r}
+
+food_consumption %>% 
+  count(food_category) %>% 
+  kable()
+
+pork <- food_consumption %>% 
+  filter(food_category == "Pork") %>% 
+  mutate(main_category = c("animal"))
+
+poultry <- food_consumption %>% 
+  filter(food_category == "Poultry") %>% 
+  mutate(main_category = c("animal"))
+
+beef <- food_consumption %>% 
+  filter(food_category == "Beef") %>% 
+  mutate(main_category = c("animal"))
+
+lamb_goat <- food_consumption %>% 
+  filter(food_category == "Lamb & Goat") %>% 
+  mutate(main_category = c("animal"))
+
+fish <- food_consumption %>% 
+  filter(food_category == "Fish") %>% 
+  mutate(main_category = c("animal"))
+
+eggs <- food_consumption %>% 
+  filter(food_category == "Eggs") %>% 
+  mutate(main_category = c("animal"))
+
+milk <- food_consumption %>% 
+  filter(food_category == "Milk - inc. cheese") %>% 
+  mutate(main_category = c("animal"))
+
+wheat <- food_consumption %>% 
+  filter(food_category == "Wheat and Wheat Products") %>% 
+  mutate(main_category = c("non_animal"))
+
+rice <- food_consumption %>% 
+  filter(food_category == "Rice") %>% 
+  mutate(main_category = c("non_animal"))
+  
+soybeans <- food_consumption %>% 
+  filter(food_category == "Soybeans") %>% 
+  mutate(main_category = c("non_animal"))
+  
+nuts <- food_consumption %>% 
+  filter(food_category == "Nuts inc. Peanut Butter") %>% 
+  mutate(main_category = c("non_animal"))
+
+```
+
+```{r}
+
+food_co2 <- rbind(pork, poultry, beef,lamb_goat, fish, eggs, milk, wheat, rice, soybeans, nuts)
+
+head(food_co2,10) %>% 
+  kable()
+
+```
+```{r, include = FALSE}
+
+# Because it belongs to character variables, so we change into a "factor" for later visualization.
+
+food_co2 <- food_co2 %>% 
+  mutate_if(is.character, factor)
+
+```
+
+### Let's show the distribution of consumption & CO2 emission in food main category we created. 
+
+From this viz, we can know that there are more CO2 emission than consumption in animal food, while there are less CO2 emission than consumption in non-animal food. Also, we can know the outliers in animal are much higher than in non-animal, which means that there is a big gap in the values in the category of animal. 
+
+```{r}
+
+theme_set(theme_bw())
+
+food_co2 %>% 
+  ggplot(aes(x=main_category))+
+  geom_boxplot(aes(y=consumption), fill= "#33CC33")+
+  geom_boxplot(aes(y=co2_emission), color= "#FF0066")+
+  scale_y_sqrt()+
+  annotate("text", x = 2, y = 750, label = "Green colour represents food consumption; 
+           Red line represents CO2 emissions",alpha = 1, color = "#3399FF", size = 4)+
+  labs(x="Main Category", y="Food Consumption & CO2 Emission", title="The Distribution of Consumption & CO2 Emission in Food Category")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"))
+
+```
+
+
+### 2. Now we want to know if it is the same with the 130 countries. Let's add another new variable as the summary of co2 emissions by food_category in each country. 
+
+```{r}
+
+food_co2 <- food_co2 %>% 
+  group_by(country, main_category) %>% 
+  mutate(co2_total = sum(c(co2_emission))) %>% 
+  ungroup()
+
+food_co2 %>% 
+  arrange(desc(co2_total)) %>% 
+  head(10)%>% 
+  kable()
+
+```
+
+### 3. What's the distribution of total CO2 emission in each country? 
+
+From this viz, we can clearly know the total of co2 emissions generated by animal food are all higher than the total of co2 emissions generated by non-animal food in every country. Because there are 130 countries and it makes messy in x axis, we removed the axis text and put top 5 countries instead. Besides, there also a big gap between the highest one and the lowest one.
+
+Top5: Argentina, Australia, Albania, New Zealand and Iceland
+
+
+```{r}
+
+food_co2 %>% 
+  mutate(country = fct_reorder(country, co2_total)) %>% 
+  ggplot(aes(country, co2_total, fill=main_category))+
+  geom_col()+
+  theme(axis.text.x  = element_blank())+
+  annotate("text", x = 30, y = 12000, label = "Top 1 : Argentina
+           Top 2 : Australia
+           Top 3 : Albania
+           Top 4 : New Zealand
+           Top 5 : Iceland"
+           ,alpha = 0.9, size=4, color = "#330099")+
+  labs(x="Country", y="Total CO2 Emission(kg)", title="The Distribution of Total CO2 Emission in 130 Countries", fill = "Category")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"),
+        legend.background = element_rect(colour = "#666666"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "bottom")
+
+```
+
+
+### Now we would like to know the distribution of each food category for each country. 
+
+We only change the `fill`. What we can know from here is beef is the higher in generating co2 emissions. Most importantly, we identify that the distribution in each category is quite average in every country. Therefore, we decide to skip the variables of country in the following visualizations. 
+
+```{r}
+
+food_co2 %>% 
+  mutate(country = fct_reorder(country, co2_total)) %>% 
+  ggplot(aes(country, co2_total, fill=food_category))+
+  geom_col()+
+  theme(axis.text.x  = element_blank())+
+  annotate("text", x = 30, y = 12000, label = "Top 1 : Argentina
+           Top 2 : Australia
+           Top 3 : Albania
+           Top 4 : New Zealand
+           Top 5 : Iceland"
+           ,alpha = 0.9, size=4, color = "#006600")+
+  labs(x="Country", y="Total CO2 Emission(kg)", title="The Distribution of Total CO2 Emission in 130 Countries", fill = "Category")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"),
+        legend.background = element_rect(colour = "#666666"),
+        panel.grid.major.x = element_blank(),
+        panel.grid.minor.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        legend.position = "bottom")
+
+```
+
+
+### We also can know the share of CO2 emission for each category by pie chart. 
+
+First we need to do calculations to make variables into percentage. (CO2 emission/total emission * 100)
+
+In the pie graph, we can see:
+
+Top 3 in animal category: beef, milk & cheese, and lamb 
+Top 3 in non-animal category: rice, wheat, and nut
+
+```{r}
+
+# To make them into percentage.(CO2 emission/total emission * 100) Note, there are 130 countries.
+
+food_co2 <- food_co2 %>% 
+  group_by(country) %>% 
+  mutate(co2_percent = co2_emission / co2_total / 130 * 100 ) %>% 
+  ungroup() 
+
+# To make % label for each category, we filter one country only.
+
+co2_percent <- food_co2 %>% 
+  group_by(food_category) %>% 
+  mutate(food_per = sum(co2_percent)) %>% 
+  filter(country =="Australia") %>% 
+  arrange(food_per) %>% 
+  ungroup()
+
+# To test if it is 100
+
+co2_percent %>% filter(main_category=="animal") %>% summarise(sum(food_per))
+
+# To make label for animal
+
+co2_per1 <- co2_percent %>% 
+  filter(main_category == "animal")
+
+label_value1 <- paste('(', round(co2_per1$food_per, 1), '%)', sep = '')
+
+label_1 <- paste(co2_per1$food_category, label_value1, sep = '')
+
+label_1 %>% kable()
+
+# To make label for non animal
+
+co2_per2 <- co2_percent %>% 
+  filter(main_category == "non_animal")
+
+label_value2 <- paste('(', round(co2_per2$food_per, 1), '%)', sep = '')
+
+label_2 <- paste(co2_per2$food_category, label_value2, sep = '')
+
+label_2 %>% kable()
+
+# Pie chart for animal
+
+p8 <- co2_percent %>% 
+  filter(main_category=="animal") %>% 
+  mutate(food_category =fct_reorder(food_category,food_per )) %>% 
+  ggplot(aes(x=1, y=food_per, fill=food_category))+
+  geom_col()+
+  coord_polar(theta = "y")+
+  scale_fill_discrete(labels=label_1)+
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        panel.border = element_blank(),
+        panel.grid = element_blank(),
+        axis.ticks = element_blank(),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"),
+        plot.subtitle = element_text(colour = "#660000"),
+        legend.position = "bottom",
+        legend.background = element_rect(colour = "#666666"),
+        legend.key.size = unit(0.1,"inches"))+
+  labs(title="Distribution of CO2 Emission(%)",subtitle = "In Animal Product", fill="")+
+  guides(fill=guide_legend(nrow = 4))
+
+# Pie chart for non-animal
+
+p9 <- co2_percent %>% 
+  filter(main_category=="non_animal") %>% 
+  arrange(co2_percent,desc=TRUE) %>% 
+  mutate(food_category =fct_reorder(food_category,food_per )) %>% 
+  ggplot(aes(x=1, y=food_per, fill=food_category))+
+  geom_col()+
+  coord_polar(theta = "y")+
+  scale_fill_manual(values = c("#FF66CC","#FFCC00","#00CC66", "#3399FF"),labels=label_2)+
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        panel.border = element_blank(),
+        panel.grid = element_blank(),
+        axis.ticks = element_blank(),
+        plot.subtitle = element_text(colour = "#660000"),
+        legend.position = "bottom",
+        legend.background = element_rect(colour = "#666666"),
+        legend.key.size = unit(0.1,"inches"))+
+  labs(subtitle = "In Non-animal Product",fill="")+
+  guides(fill=guide_legend(nrow = 4))
+
+
+p8+p9
+  
+```
+
+
+### 4. Next, we want to know the difference between co2 emissions and food consumption, and then different values cut into three types. 
+
+The reason is to identify which food category has higher gap between co2 emissions and food consumption, and to know the value is positive or negative. 
+
+```{r}
+
+food_co2 <- food_co2 %>% 
+  mutate( difference = co2_emission-consumption) %>% 
+  arrange(desc(difference)) %>%  
+  mutate(diff_type = cut_number(difference, n = 3, labels = c("low","med","high")))
+
+# To see the high in the gap
+food_co2 %>%
+  filter(diff_type=="high") %>% 
+  count(food_category, sort = TRUE) %>% 
+  kable()
+
+# To see the low in the gap
+food_co2 %>%
+  filter(diff_type=="low") %>% 
+  count(food_category, sort = TRUE) %>% 
+  kable()
+
+```
+
+```{r, include = FALSE}
+
+# Because the diff_type belongs to character variables, so we change into a "factor" for later visualization.
+
+food_co2 <- food_co2 %>% 
+  mutate_if(is.character, factor)
+
+```
+
+In the result, we can see, in the high type, that beef has 130 counts, lamb & goat has 107 counts, milk inc. cheese has 105 counts, and pork has 80 counts, which means that they all tend to generate co2 more than itself consume. On the other hand, eggs, soybeans, and wheat and wheat products have 130 counts each, which means that they tend to consume more than generate co2. Besides, there are 130 countries; that is to say, in food category of beef, eggs, soybeans, and wheat all represent either high (highest) or low (lowest) gap in each countries. 
+
+Let's show the results clearly in the bar chart. 
+
+```{r}
+
+# Bar chart to see beef is highest and wheat has negative value.
+
+food_co2 %>% 
+  mutate(food_category = fct_reorder(food_category,difference)) %>% 
+  ggplot(aes(food_category,difference, fill=diff_type))+
+  geom_col()+
+  labs(x="Food Category", y="Gap (Co2 Emission - Consumption)", title="The Gap between CO2 Emission & Food Consumption", fill="Type")+
+  coord_flip()+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"),
+        legend.background = element_rect(colour = "#666666"),
+        legend.position = c(1,0),
+        legend.justification = c(1,0))
+
+```
+
+
+In order to show the gap more clearly, we create another bar chart. The orange color represents co2 emissions, while the blue color represents food consumption. 
+
+```{r}
+# To see the gap
+
+food_co2 %>% 
+  mutate(food_category=fct_reorder(food_category,co2_emission)) %>% 
+  ggplot(aes(x=food_category))+
+  geom_col(aes(y=co2_emission), fill="#FF6600")+
+  geom_col(aes(y=consumption), fill="#3399FF")+
+  coord_flip()+
+  labs(y="Co2 Emission(orange) & Consumption(blue)", x="Food Category", title="The Gap between CO2 Emission & Food Consumption")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"))
+
+```
+
+#### Since the two bar chart are similar, let's compare the viz together. 
+
+From both bar chart, we can know beef product is the highest. However, if we would like to know the gap value is positive or negative, we can see in first viz. It obviously shows that the first four have positive values(co2 emission > consumption), beef in particular, while the last three have negative values(consumption > co2 emission), wheat particularly. On the other hand, if we want to identify the gap, we can see in the second viz. It tells us that there are huge gap between CO2 emission and consumption in beef and lamb & goat. Therefore, we can show people try to consume less in these two products since they really affect our environment.
+
+```{r}
+
+p0 <- food_co2 %>% 
+  mutate(food_category = fct_reorder(food_category,difference)) %>% 
+  ggplot(aes(food_category,difference,fill=diff_type))+
+  geom_col()+
+  coord_flip()+
+  labs(y="Gap (Co2 Emission - Consumption)", fill="Type", title="The Comparison Between Two Charts")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        axis.title.y = element_blank(),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"),
+        legend.background = element_rect(colour = "#666666"),
+        legend.position = c(1,0),
+        legend.justification = c(1,0))
+
+p1 <- food_co2 %>% 
+  mutate(food_category=fct_reorder(food_category,co2_emission)) %>% 
+  ggplot(aes(x=food_category))+
+  geom_col(aes(y=co2_emission), fill="#FF6600")+
+  geom_col(aes(y=consumption), fill="#3399FF")+
+  coord_flip()+
+  labs(y="Co2 Emission(orange) & Consumption(blue)")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        axis.title.y = element_blank())
+
+p0/
+  p1
+
+```
+
+
+
+#### From the prior viz, now we know:
+
+ - Every food category has different variable in co2 emission and consumption (high and low from bar chart);
+ - Every country has consumed every food category (both animal and non-animal product);
+ - The variables from main category (animal and non-animal ) also have different range.
+
+Hence, it is time to test our assumptions. 
+
+Assumption 1: Can we predict the food category by knowing their food consumption and co2 emissions? 
+
+Assumption 2: Can we predict the co2 emissions by knowing food category and consumption?
+
+In the first assumption, we have already known different category has different variables. We have to see the relationship for each category to make sure if we know the variables from food consumption and co2 emissions, and we can forecast it belongs to specific category.
+
+For the second assumption, co2 emission becomes the variable we want to predict; therefore, we need to see the relationship among three variables(co2 emissions, food category and consumption) as well. 
+
+Let's create some scatter plot to get individual data point between two variables (food consumption and co2_emission), and also add linear regression, which calculates x~y, to see the relations among the dots. 
+
+```{r}
+
+food_co2 %>% 
+  ggplot(aes(consumption, co2_emission)) + 
+  geom_point(color="#66CC33", size=2, alpha = 0.8)+
+  geom_smooth(method = lm, se =FALSE)+
+  labs(x="Food Consumption", y="CO2 Emission", title="The Relation Between Consumption & CO2 Emission From Food", subtitle = "A linear relation shows positive")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic",colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"),
+        plot.subtitle = element_text(colour = "#660000"))
+
+```
+
+
+```{r, include=FALSE}
+
+food_co2 %>% 
+  ggplot(aes(consumption, co2_emission, colour = main_category)) + 
+  geom_point(alpha = 0.8)+
+  labs(x="Food Consumption", y="CO2 Emission", title="The Relation Between Consumption & CO2 Emission by Food Category", colour="Category")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"))
+
+```
+
+
+From the two viz below, first one is with two different colors for different category; last one is adding the calculated linear between dots to see the relationships. We can clearly know that each data point locates on each positive track; it seems there are invisible line connecting the dots. The first scatter graph tells us animal products are more close vertical than non-animal products. Also, the second scatter graph shows a linear relationship among the points. 
+
+```{r}
+
+p3 <- food_co2 %>% 
+  ggplot(aes(consumption, co2_emission, colour = main_category)) + 
+  geom_point(alpha = 0.8)+
+  labs(title="The Relation Between Consumption & CO2 Emission From Food", colour="Category")+
+  theme(axis.text.y = element_text(face= "italic"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"))+
+  theme(axis.title = element_blank(),
+        axis.text.x = element_blank())+
+  theme(legend.position = c(1,1),
+        legend.justification = c(1,1),
+        legend.background = element_rect(colour = "#666666"))
+
+p4 <- food_co2 %>% 
+  ggplot(aes(consumption, co2_emission)) + 
+  geom_point(color="#66CC33", size=2, alpha = 0.8)+
+  geom_smooth(method = lm, se =FALSE)+
+  labs(x="Food Consumption", y="CO2 Emission")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"))
+
+p3/p4
+
+
+```
+
+
+Additionally, we want to see if we also can identify the right category among the 11 types in food category. It is very obvious that we can identify the main category since one is more close to vertical line, while another is more close to horizontal line. Luckily, they all have positive linear relationships in each category.
+
+```{r}
+
+food_co2 %>% 
+  ggplot(aes(consumption, co2_emission, colour = food_category)) + 
+  geom_point(alpha = 0.9)+
+  geom_smooth(method = lm, se =FALSE) +
+  facet_wrap(~main_category)+
+  labs(x="Food Consumption", y="CO2 Emission", title="The Relation Between Consumption & CO2 Emission in Category", colour="Category")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"),
+        legend.background = element_rect(colour = "#666666"),
+        legend.position = "right",
+        legend.title = element_blank(),
+        legend.text = element_text(size = 6))
+
+```
+
+
+Lastly, we want to know if the relation between the consumption and co2 depends on food category. 
+
+
+```{r}
+
+# To know the linear regression based on food category
+
+food_co2 %>% 
+  ggplot(aes(consumption, co2_emission, colour = food_category)) + 
+  geom_point(alpha = 0.8)+
+  geom_smooth(method = lm, se =FALSE) +
+  scale_color_viridis_d(option = "plasma", end = .7)+
+  labs(x="Food Consumption", y="CO2 Emission", title="The Relation Between Consumption & CO2 Emission in Category", colour="Category")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"),
+        legend.background = element_rect(colour = "#666666"),
+        legend.position = c(1,1),
+        legend.justification = c(1,1))+
+  guides(colour=guide_legend(nrow = 6))
+
+```
+
+```{r}
+
+# To know the linear regression based on  two main food category
+
+food_co2 %>% 
+  ggplot(aes(x=consumption,y=co2_emission, color=main_category))+
+  geom_point(alpha = 0.8)+
+  geom_smooth(method = lm, se = FALSE)+
+  scale_color_viridis_d(option = "plasma", end = .7)+
+  labs(x="Food Consumption", y="CO2 Emission", title="The Relation Between Consumption & CO2 Emission in Category",color="Main Category")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"),
+        legend.background = element_rect(colour = "#666666"),
+        legend.position = c(1,1),
+        legend.justification = c(1,1))
+
+```
+
+
+# MAKE DECISION FOR PREDICTIONS
+
+We have proved that there is positive linear relationship among food category to fit our assumptions, so our assumption 2 is predictable. Now we want to make decisions to choose either food category or main category we created; therefore, let's see the two scatter plots below. It seems that both segment food category and two main food category are workable because each follows different line with positive direction. However, we cannot see very clear in segment category for each types; for example, we can identify 8 types for sure, but how about the other 3 types? Hence, for assumption 1, we decide to choose main category for clear prediction. 
+
+```{r}
+
+p5 <- food_co2 %>% 
+  ggplot(aes(consumption, co2_emission, colour = food_category)) + 
+  geom_point(alpha = 0.8)+
+  geom_smooth(method = lm, se =FALSE) +
+  scale_color_viridis_d(option = "plasma", end = .7)+
+  labs(x="Food Consumption", y="CO2 Emission", title="Comparison", subtitle = "Between segment and main category")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        plot.subtitle = element_text(colour = "#660000"),
+        plot.title = element_text(face ="bold", size = 14, color = "firebrick"))+
+  theme(legend.position = "none")
+
+p6 <- food_co2 %>% 
+  ggplot(aes(x=consumption,y=co2_emission, color=main_category))+
+  geom_point(alpha = 0.8)+
+  geom_smooth(method = lm, se = FALSE)+
+  scale_color_viridis_d(option = "plasma", end = .7)+
+  labs(x="Food Consumption")+
+  theme(axis.text = element_text(face= "italic"),
+        axis.title = element_text(face= "italic", colour = "#330000"),
+        axis.text.y = element_blank(),
+        axis.title.y = element_blank())+
+  theme(legend.position = "none")
+
+p5+p6
+
+```
+
+
+# PREDICTIVE ANALYSIS
+
+From the above analysis, we can build the models for our two assumptions.
+
+Assumption 1: Can we predict the **main category** by knowing their food consumption and co2 emissions? 
+
+Assumption 2: Can we predict the **co2 emissions** by knowing food category and consumption?
+
+Firstly, let's identify what is our output variable, which means we want to predict; in two assumptions above, `main category` and `co2 emissions` are output variable, and we want to use *food consumption and co2 emissions* to predict main category and use *food category and consumption* to predict co2 emissions; therefore, `food consumption and co2 emissions` and `food category and consumption` are our input variables. 
+
+Secondly, we need to decide the approach to build the model. Since main category is *character value*, and co2 emissions is *numeric value*, we will adopt *classification model* for character value (main category) and *regression model* for numeric value (co2 emissions).
+
+---
+
+There are three steps in building a model, and then we can create a workflow to save the recipe and model we create for future purpose. 
+
+### Step 1: Split the dataset into Training & Testing datasets.
+
+```{r}
+
+food_co2_split <- initial_split(food_co2)
+food_co2_train <- training(food_co2_split)
+food_co2_test <- testing(food_co2_split)
+
+```
+
+### Step 2: Pre-process the data.
+
+#### 2.1 Set the recipe & get the ingredients - `recipe()`
+
+For Classification model:
+
+```{r}
+
+foodco2_cla_recipe <- recipe(main_category ~ co2_emission+consumption, data = food_co2_train)
+
+summary(foodco2_cla_recipe)
+
+
+```
+
+For Regression model:
+
+```{r}
+
+foodco2_reg_recipe <- recipe(co2_emission ~ food_category+consumption, data = food_co2_train)
+
+summary(foodco2_reg_recipe)
+
+```
+
+#### 2.2 Write the recipe steps - `step_xxx()`
+
+For Classification model:
+
+```{r}
+
+foodco2_cla_recipe <- foodco2_cla_recipe %>% 
+  step_center(all_numeric(), -all_outcomes()) %>% 
+  step_scale(all_numeric(), -all_outcomes()) %>% 
+  step_corr(all_numeric())
+
+```
+
+For Regression model:
+
+```{r}
+
+foodco2_reg_recipe <- foodco2_reg_recipe %>% 
+  step_center(all_numeric(), -all_outcomes()) %>% 
+  step_scale(all_numeric(), -all_outcomes()) %>% 
+  step_corr(all_numeric())
+
+```
+
+#### 2.3 Get ready with the prep - `prep()`
+
+For Classification model:
+
+```{r}
+
+foodco2_cla_prep <- prep(foodco2_cla_recipe, training= food_co2_train)
+
+```
+
+For Regression model:
+
+```{r}
+
+foodco2_reg_prep <- prep(foodco2_reg_recipe, training= food_co2_train)
+
+```
+
+#### 2.4 Bake the recipe - `bake()`
+
+For Classification model:
+
+```{r}
+foodco2_cla_bake <- bake(foodco2_cla_prep, food_co2_train)
+
+foodco2_cla_bake
+
+```
+
+For Regression model:
+
+```{r}
+
+foodco2_reg_bake <- bake(foodco2_reg_prep, food_co2_train)
+
+foodco2_reg_bake
+
+```
+
+### Step 3: Build a model
+
+#### 3.1 Set up the model [mode, model type & engine] 
+
+For Classification model:
+
+```{r}
+
+model_class <- rand_forest() %>% 
+  set_mode("classification") %>% 
+  set_engine("ranger")
+
+model_class
+
+```
+For Regression model:
+
+```{r}
+
+model_reg <- linear_reg() %>% 
+  set_mode("regression") %>% 
+  set_engine("lm")
+
+model_reg
+
+```
+#### 3.2 Fit the model
+
+For Classification model:
+
+```{r}
+
+modelcla_fitted <- model_class %>% 
+  fit(main_category ~ co2_emission * consumption, data = foodco2_cla_bake)
+
+summary(modelcla_fitted)
+
+```
+For Regression model:
+
+```{r}
+
+modelreg_fitted <- model_reg %>% 
+  fit(co2_emission ~ food_category * consumption, data = foodco2_reg_bake)
+
+summary(modelreg_fitted)
+
+```
+### Step 4: Create a workflow
+
+For Classification model:
+
+```{r}
+
+workflow_class <- workflow() %>% 
+  add_recipe(foodco2_cla_recipe) %>% 
+  add_model(model_class)
+
+workflow_class
+
+```
+
+For Regression model:
+
+```{r}
+
+workflow_reg <- workflow() %>% 
+  add_recipe(foodco2_reg_recipe) %>% 
+  add_model(model_reg)
+
+workflow_reg
+
+```
+
