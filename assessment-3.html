@@ -1222,34 +1222,34 @@ foodco2_cla_bake</code></pre>
 <pre><code>## # A tibble: 1,072 x 3
 ##    co2_emission consumption main_category
 ##           &lt;dbl&gt;       &lt;dbl&gt; &lt;fct&gt;        
-##  1       -0.456      -0.556 animal       
-##  2       -0.489      -0.559 non_animal   
-##  3       -0.478      -0.529 animal       
-##  4        0.528      -0.463 animal       
-##  5        1.50        3.50  animal       
-##  6       -0.393      -0.298 animal       
-##  7        0.393       1.24  animal       
-##  8       -0.474      -0.535 non_animal   
-##  9       -0.418      -0.441 non_animal   
-## 10       -0.368      -0.230 animal       
+##  1      -0.326       -0.292 non_animal   
+##  2      -0.464       -0.558 animal       
+##  3      -0.399       -0.424 non_animal   
+##  4       0.200        0.968 animal       
+##  5      -0.0674      -0.535 animal       
+##  6      -0.323        2.09  non_animal   
+##  7      -0.456       -0.512 non_animal   
+##  8       0.483       -0.485 animal       
+##  9      -0.473       -0.560 non_animal   
+## 10      -0.354       -0.254 non_animal   
 ## # ... with 1,062 more rows</code></pre>
 <p>For Regression model:</p>
 <pre class="r"><code>foodco2_reg_bake &lt;- bake(foodco2_reg_prep, food_co2_train)
 
 foodco2_reg_bake</code></pre>
 <pre><code>## # A tibble: 1,072 x 3
-##    food_category           consumption co2_emission
-##    &lt;fct&gt;                         &lt;dbl&gt;        &lt;dbl&gt;
-##  1 Lamb &amp; Goat                  -0.556         4.9 
-##  2 Soybeans                     -0.559         0   
-##  3 Poultry                      -0.529         1.62
-##  4 Beef                         -0.463       150.  
-##  5 Milk - inc. cheese            3.50        293.  
-##  6 Poultry                      -0.298        14.2 
-##  7 Milk - inc. cheese            1.24        130.  
-##  8 Nuts inc. Peanut Butter      -0.535         2.14
-##  9 Nuts inc. Peanut Butter      -0.441        10.5 
-## 10 Poultry                      -0.230        17.9 
+##    food_category            consumption co2_emission
+##    &lt;fct&gt;                          &lt;dbl&gt;        &lt;dbl&gt;
+##  1 Nuts inc. Peanut Butter       -0.292        24.4 
+##  2 Pork                          -0.558         2.62
+##  3 Nuts inc. Peanut Butter       -0.424        13.0 
+##  4 Milk - inc. cheese             0.968       108.  
+##  5 Lamb &amp; Goat                   -0.535        65.5 
+##  6 Wheat and Wheat Products       2.09         25.0 
+##  7 Rice                          -0.512         3.84
+##  8 Lamb &amp; Goat                   -0.485       153.  
+##  9 Nuts inc. Peanut Butter       -0.560         1.19
+## 10 Rice                          -0.254        20.0 
 ## # ... with 1,062 more rows</code></pre>
 </div>
 </div>
