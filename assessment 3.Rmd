@@ -11,6 +11,13 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ![Source from Outside Magazine 2019](images/image_03.jpg)
 
+
+
+# INTRODUCTION
+
+As global environmental issues become more serious and sustainable development becomes more essential. The food, before showing on our table, needs to be produced by humans through the process of production, transportation,and consumption. In fact, it is proved that food production is responsible for a quarter of total contributing to global greenhouse gas emissions. How food and the environment interact, as well as the issue of reducing carbon emissions have attracted significant attention. For organisations which fight for climate change (such as FAO) and companies regarding health and natural food (such as nu3), the main issue is how we can reduce co2 emissions from food. By analyzing the historical dataset of yearly carbon emissions per person for 130 nations, which was published by the Food and Agriculture Organization of the United Nations, we make two assumptions and then create the visualizations to observe; after proving our assumptions workable, we will build the models for future purposes.
+
+
 ```{r, include = FALSE}
 
 #Packages
@@ -53,7 +60,7 @@ skim(food_consumption)
 
 ### 1. spelling correction
 
-We found there is a mistake in spelling in variable name, so we want to change emmission to emission. 
+We found there is a mistake in spelling in variable names, so we want to change emmission to emission. 
 
 ```{r}
 
@@ -77,7 +84,7 @@ food_consumption <- food_consumption %>%
 From the dataset and data dictionary, we know:
 
  - There are 130 countries in total.
- - There are 11 types in food category, which include 7 animal types and 4 non-animal types.
+ - There are 11 types in the food category, which include 7 animal types and 4 non-animal types.
  - The amount of food that a country provides for consumption. (Kg/person/year)
  - Based on the food consumption above, the values represent how many CO2 (kg) is generated per person per year.
 
@@ -89,13 +96,13 @@ The main issue is how we can reduce co2 emissions regarding food for the future 
 
 In the two assumptions, output variables are what we want to predict, so *food category* (character value) and *co2 emissions* (numeric value) are our output variables. We want to predict the output variables by using either **classification** (character value) or **regression** (numeric value) approaches to build models, which can help us to predict new dataset based on the original dataset.
 
-To make sure we can actual predict by using the model for future dataset, we need to do some test to see if our assumptions can get positive results. 
+To make sure we can actually predict by using the model for future dataset, we need to do some tests to see if our assumptions can get positive results. 
 
-We make some questions to test our assumptions. Before doing that, let's add some variables into dataset and rename to `food_co2`. 
+We make some questions to test our assumptions. Before doing that, let's add some variables into the dataset and rename it to `food_co2`. 
 
-### 1. Add a new variables as main category, which are either animal or non animal.
+### 1. Add a new variable as main_category, which are either animal or non animal.
 
-There are 11 types in food category. For better analysis, we make them into a more general category.
+There are 11 types in the food category. For better analysis, we make them into a more general category.
 
  - animal: pork, poultry, beef,lamb_goat, fish, eggs, milk & cheese; 
 
@@ -170,9 +177,9 @@ food_co2 <- food_co2 %>%
 
 ```
 
-### Let's show the distribution of consumption & CO2 emission in food main category we created. 
+### 2. Let's show the distribution of consumption & CO2 emission in the main food category we created. 
 
-From this viz, we can know that there are more CO2 emission than consumption in animal food, while there are less CO2 emission than consumption in non-animal food. Also, we can know the outliers in animal are much higher than in non-animal, which means that there is a big gap in the values in the category of animal. 
+From this viz, we can know that there is more CO2 emission than consumption in animal food, while there is less CO2 emission than consumption in non-animal food. Also, we can know the outliers in animals are much higher than in non-animal, which means that there is a big gap in the values in the category of animal. 
 
 ```{r}
 
@@ -193,7 +200,7 @@ food_co2 %>%
 ```
 
 
-### 2. Now we want to know if it is the same with the 130 countries. Let's add another new variable as the summary of co2 emissions by food_category in each country. 
+### 3. Now we want to know if it is the same with the 130 countries. Let's add another new variable as the summary of co2 emissions by food_category in each country. 
 
 ```{r}
 
@@ -209,9 +216,9 @@ food_co2 %>%
 
 ```
 
-### 3. What's the distribution of total CO2 emission in each country? 
+### 4. What's the distribution of total CO2 emission in each country? 
 
-From this viz, we can clearly know the total of co2 emissions generated by animal food are all higher than the total of co2 emissions generated by non-animal food in every country. Because there are 130 countries and it makes messy in x axis, we removed the axis text and put top 5 countries instead. Besides, there also a big gap between the highest one and the lowest one.
+From this viz, we can clearly know the total of co2 emissions generated by animal food are all higher than the total of co2 emissions generated by non-animal food in every country. Because there are 130 countries and it is messy on the x axis, we removed the axis text and put the top 5 countries instead. Besides, there is also a big gap between the highest one and the lowest one.
 
 Top5: Argentina, Australia, Albania, New Zealand and Iceland
 
@@ -242,9 +249,9 @@ food_co2 %>%
 ```
 
 
-### Now we would like to know the distribution of each food category for each country. 
+### 5. Now we would like to know the distribution of each food category for each country. 
 
-We only change the `fill`. What we can know from here is beef is the higher in generating co2 emissions. Most importantly, we identify that the distribution in each category is quite average in every country. Therefore, we decide to skip the variables of country in the following visualizations. 
+We only change the `fill`. What we can know from here is that beef is the highest in generating co2 emissions. Most importantly, we identify that the distribution in each category is quite average in every country. Therefore, we decide to skip the variables of country in the following visualizations. 
 
 ```{r}
 
@@ -272,9 +279,9 @@ food_co2 %>%
 ```
 
 
-### We also can know the share of CO2 emission for each category by pie chart. 
+### 6. We also can know the share of CO2 emission for each category by pie chart. 
 
-First we need to do calculations to make variables into percentage. (CO2 emission/total emission * 100)
+First we need to do calculations to make variables into percentages. (CO2 emission/total emission * 100)
 
 In the pie graph, we can see:
 
@@ -375,9 +382,9 @@ p8+p9
 ```
 
 
-### 4. Next, we want to know the difference between co2 emissions and food consumption, and then different values cut into three types. 
+### 7. Next, we want to know the difference between co2 emissions and food consumption, and then different values cut into three types. 
 
-The reason is to identify which food category has higher gap between co2 emissions and food consumption, and to know the value is positive or negative. 
+The reason is to identify which food category has a higher gap between co2 emissions and food consumption, and to know if the value is positive or negative. 
 
 ```{r}
 
@@ -409,9 +416,9 @@ food_co2 <- food_co2 %>%
 
 ```
 
-In the result, we can see, in the high type, that beef has 130 counts, lamb & goat has 107 counts, milk inc. cheese has 105 counts, and pork has 80 counts, which means that they all tend to generate co2 more than itself consume. On the other hand, eggs, soybeans, and wheat and wheat products have 130 counts each, which means that they tend to consume more than generate co2. Besides, there are 130 countries; that is to say, in food category of beef, eggs, soybeans, and wheat all represent either high (highest) or low (lowest) gap in each countries. 
+In the result, we can see, in the high type, that beef has 130 counts, lamb & goat has 107 counts, milk inc. cheese has 105 counts, and pork has 80 counts, which means that they all tend to generate co2 more than it consumes. On the other hand, eggs, soybeans, and wheat and wheat products have 130 counts each, which means that they tend to consume more than generate co2. Besides, there are 130 countries; that is to say, the food categories of beef, eggs, soybeans, and wheat all represent either a high (highest) or low (lowest) gap in each country. 
 
-Let's show the results clearly in the bar chart. 
+### 8. Let's show the results clearly in the bar chart. 
 
 ```{r}
 
@@ -451,9 +458,9 @@ food_co2 %>%
 
 ```
 
-#### Since the two bar chart are similar, let's compare the viz together. 
+### 9. Since the two bar charts are similar, let's compare the viz together. 
 
-From both bar chart, we can know beef product is the highest. However, if we would like to know the gap value is positive or negative, we can see in first viz. It obviously shows that the first four have positive values(co2 emission > consumption), beef in particular, while the last three have negative values(consumption > co2 emission), wheat particularly. On the other hand, if we want to identify the gap, we can see in the second viz. It tells us that there are huge gap between CO2 emission and consumption in beef and lamb & goat. Therefore, we can show people try to consume less in these two products since they really affect our environment.
+From both bar charts, we can know beef products are the highest. However, if we would like to know if the gap value is positive or negative, we can see in first viz. It obviously shows that the first four have positive values(co2 emission > consumption), beef in particular, while the last three have negative values(consumption > co2 emission), wheat particularly. On the other hand, if we want to identify the gap, we can see in the second viz. It tells us that there is a huge gap between CO2 emission and consumption in beef and lamb & goat. Therefore, we can show people try to consume less in these two products since they really affect our environment.
 
 ```{r}
 
@@ -488,12 +495,13 @@ p0/
 ```
 
 
+## RELATIONS ANALYSIS FOR PREDICTIONS
 
 #### From the prior viz, now we know:
 
  - Every food category has different variable in co2 emission and consumption (high and low from bar chart);
  - Every country has consumed every food category (both animal and non-animal product);
- - The variables from main category (animal and non-animal ) also have different range.
+ - The variables from the main category (animal and non-animal ) also have different ranges.
 
 Hence, it is time to test our assumptions. 
 
@@ -501,11 +509,11 @@ Assumption 1: Can we predict the food category by knowing their food consumption
 
 Assumption 2: Can we predict the co2 emissions by knowing food category and consumption?
 
-In the first assumption, we have already known different category has different variables. We have to see the relationship for each category to make sure if we know the variables from food consumption and co2 emissions, and we can forecast it belongs to specific category.
+In the first assumption, we have already known that different categories have different variables. We have to see the relationship for each category to make sure if we know the variables from food consumption and co2 emissions, and we can forecast if it belongs to a specific category.
 
 For the second assumption, co2 emission becomes the variable we want to predict; therefore, we need to see the relationship among three variables(co2 emissions, food category and consumption) as well. 
 
-Let's create some scatter plot to get individual data point between two variables (food consumption and co2_emission), and also add linear regression, which calculates x~y, to see the relations among the dots. 
+Let's create some scatter plot to get individual data points between two variables (food consumption and co2_emission), and also add linear regression, which calculates x~y, to see the relations among the dots. 
 
 ```{r}
 
@@ -527,7 +535,7 @@ food_co2 %>%
 food_co2 %>% 
   ggplot(aes(consumption, co2_emission, colour = main_category)) + 
   geom_point(alpha = 0.8)+
-  labs(x="Food Consumption", y="CO2 Emission", title="The Relation Between Consumption & CO2 Emission by Food Category", colour="Category")+
+  labs(x="Food Consumption", y="CO2 Emission", title="The Relation Between Consumption & CO2 Emission by Category", colour="Category")+
   theme(axis.text = element_text(face= "italic"),
         axis.title = element_text(face= "italic", colour = "#330000"),
         plot.title = element_text(face ="bold", size = 14, color = "firebrick"))
@@ -535,7 +543,7 @@ food_co2 %>%
 ```
 
 
-From the two viz below, first one is with two different colors for different category; last one is adding the calculated linear between dots to see the relationships. We can clearly know that each data point locates on each positive track; it seems there are invisible line connecting the dots. The first scatter graph tells us animal products are more close vertical than non-animal products. Also, the second scatter graph shows a linear relationship among the points. 
+From the two viz below, the first one is with two different colors for different categories; the last one is adding the calculated linear between dots to see the relationships. We can clearly know that each data point locates on each positive track; it seems there are invisible lines connecting the dots. The first scatter graph tells us animal products are more closely vertical than non-animal products. Also, the second scatter graph shows a linear relationship among the points. 
 
 ```{r}
 
@@ -566,7 +574,7 @@ p3/p4
 ```
 
 
-Additionally, we want to see if we also can identify the right category among the 11 types in food category. It is very obvious that we can identify the main category since one is more close to vertical line, while another is more close to horizontal line. Luckily, they all have positive linear relationships in each category.
+Additionally, we want to see if we also can identify the right category among the 11 types in the food category. It is very obvious that we can identify the main category since one is more close to the vertical line, while another is closer to the horizontal line. Luckily, they all have positive linear relationships in each category.
 
 ```{r}
 
@@ -587,7 +595,7 @@ food_co2 %>%
 ```
 
 
-Lastly, we want to know if the relation between the consumption and co2 depends on food category. 
+Lastly, we want to know if the relation between the consumption and co2 depends on the food category. 
 
 
 ```{r}
@@ -632,7 +640,7 @@ food_co2 %>%
 
 # MAKE DECISION FOR PREDICTIONS
 
-We have proved that there is positive linear relationship among food category to fit our assumptions, so our assumption 2 is predictable. Now we want to make decisions to choose either food category or main category we created; therefore, let's see the two scatter plots below. It seems that both segment food category and two main food category are workable because each follows different line with positive direction. However, we cannot see very clear in segment category for each types; for example, we can identify 8 types for sure, but how about the other 3 types? Hence, for assumption 1, we decide to choose main category for clear prediction. 
+We have proved that there is a positive linear relationship among food categories to fit our assumptions, so our assumption 2 is predictable. Now we want to make decisions to choose either the food category or main category we created; therefore, let's see the two scatter plots below. It seems that both segment categories and two main food categories are workable because each follows a different line with positive direction. However, we cannot see very clearly in the segment category for each type; for example, we can identify 8 types for sure, but how about the other 3 types? Hence, for assumption 1, we decide to choose the main category instead of segment categories for clear prediction. 
 
 ```{r}
 
@@ -665,7 +673,7 @@ p5+p6
 ```
 
 
-# PREDICTIVE ANALYSIS
+# PREDICTIVE ANALYSIS & MODELS BUILDING
 
 From the above analysis, we can build the models for our two assumptions.
 
@@ -675,11 +683,11 @@ Assumption 2: Can we predict the **co2 emissions** by knowing food category and 
 
 Firstly, let's identify what is our output variable, which means we want to predict; in two assumptions above, `main category` and `co2 emissions` are output variable, and we want to use *food consumption and co2 emissions* to predict main category and use *food category and consumption* to predict co2 emissions; therefore, `food consumption and co2 emissions` and `food category and consumption` are our input variables. 
 
-Secondly, we need to decide the approach to build the model. Since main category is *character value*, and co2 emissions is *numeric value*, we will adopt *classification model* for character value (main category) and *regression model* for numeric value (co2 emissions).
+Secondly, we need to decide the approach to build the model. Since the main category is *character value*, and co2 emissions is *numeric value*, we will adopt *classification model* for character value (main category) and *regression model* for numeric value (co2 emissions).
 
 ---
 
-There are three steps in building a model, and then we can create a workflow to save the recipe and model we create for future purpose. 
+There are three steps in building a model, and then we can create a workflow to save the recipe and model we create for future purposes. 
 
 ### Step 1: Split the dataset into Training & Testing datasets.
 
@@ -852,4 +860,8 @@ workflow_reg <- workflow() %>%
 workflow_reg
 
 ```
+
+# RECOMMENDATIONS
+
+It turns out that what we have for a meal matters a lot! Most plant-based foods are low-carbon choices, followed by fish, chicken and pork, and beef far away from other animal food accounting for the highest carbon emissions from food. From visualizations above, we already know that it is critical to identify what we consume in daily life, and it is for sure that food contains either high-carbon or low-carbon options. People can be encouraged to consume less meat or choose more low-carbon foods. Let us all work together to reduce carbon emissions and safeguard the environment!
 
